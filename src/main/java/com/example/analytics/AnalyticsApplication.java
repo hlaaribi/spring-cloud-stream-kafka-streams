@@ -106,11 +106,21 @@ public class AnalyticsApplication {
 				@StreamListener
 				@SendTo(AnalyticsBinding.PAGE_COUNT_OUT)
 				public KStream<String, Long> process(@Input(AnalyticsBinding.PAGE_VIEWS_IN) KStream<String, PageViewEvent> events) {
-						return events
+//						return events
+//							.filter((key, value) -> value.getDuration() > 10)
+//							.map((key, value) -> new KeyValue<>(value.getPage(), "0"))
+//							.groupByKey()
+//							.count(Materialized.as(AnalyticsBinding.PAGE_COUNT_MV))
+//							.toStream();
+					
+					return events
 							.filter((key, value) -> value.getDuration() > 10)
-							.map((key, value) -> new KeyValue<>(value.getPage(), "0"))
+							.map((key, value) -> new KeyValue<>(value.getPage(), value.getDuration()))
 							.groupByKey()
-							.count(Materialized.as(AnalyticsBinding.PAGE_COUNT_MV))
+							.aggregate(()-> 0L, 
+									(cle, val, valAgregee) -> valAgregee + val, 
+									Materialized.as(AnalyticsBinding.PAGE_COUNT_MV))
+											
 							.toStream();
 				}
 		}
